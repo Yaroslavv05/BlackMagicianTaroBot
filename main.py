@@ -3,11 +3,13 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from datetime import datetime
 from config import TOKEN, OpenAI
+from SQL.DataCardDay import CardDay
 from SQL.DataUsers import Users
 from SQL.HistoreCard import History, History_love
 from SQL.DataAnswer import Questions, add_wisdoms, card_love
-import os, random, asyncio, logging, openai
+import os, random, asyncio, logging, openai, sqlite3, time
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
@@ -18,6 +20,7 @@ dp = Dispatcher(bot, storage=storage)
 hide_key_board = types.ReplyKeyboardRemove()
 markup = types.ReplyKeyboardMarkup(one_time_keyboard=False)
 markup0 = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+markup0.row('Карта дня 🎴')
 markup0.add('Вытянуть карту 🀄️', 'Расклад на отношения 🤍', 'Добавить мудрости 🤓', 'История гадания 📖')
 markup0.row('Поговорить с Black magician 😈')
 markup1 = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -32,6 +35,8 @@ markup5 = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
 markup5.add('Открыть карту будущего')
 inline_btn_1 = InlineKeyboardButton('Узнать больше', callback_data='read')
 inline_kb1 = InlineKeyboardMarkup().add(inline_btn_1)
+inline_btn_10 = InlineKeyboardButton('Узнать больше', callback_data='card_day')
+inline_kb10 = InlineKeyboardMarkup().add(inline_btn_10)
 inline_btn_2 = InlineKeyboardButton('Узнать больше', callback_data='history')
 inline_btn_9 = InlineKeyboardButton('Узнать больше', callback_data='read_love')
 inline_kb9 = InlineKeyboardMarkup().add(inline_btn_9)
@@ -60,7 +65,48 @@ async def main(message: types.Message):
     print(message.from_user.id, message.from_user.full_name, message.text)
     global name
     name = random.choice(os.listdir("parser/static/img")).split('.jpg')[0]
-    if message.text == 'Вытянуть карту 🀄️':
+    if message.text == 'Карта дня 🎴':
+        con = sqlite3.connect('BlackBot.db')
+        cur = con.cursor()
+        time = cur.execute(f'SELECT full_time FROM card_day WHERE user_id = {message.from_user.id}').fetchall()
+        global name_card
+        name_card = cur.execute(f'SELECT name_card FROM card_day WHERE user_id = {message.from_user.id}').fetchall()
+        def isUserDatebase():
+            data = cur.execute('SELECT * FROM card_day')
+            for i in data.fetchall():
+                if message.from_user.id == i[0]:
+                    return True
+            return False
+        if not isUserDatebase():
+            current_datetime = datetime.now()
+            await bot.send_message(message.from_user.id, '🔮')
+            await asyncio.sleep(3)
+            await bot.send_photo(message.from_user.id, photo=open(f'parser/static/img/{name}.jpg', 'rb'))
+            with open(f'parser/static/txt/{name}.txt', 'r', encoding='utf8') as read:
+                info = read.read()
+                await bot.send_message(message.from_user.id, info[:200], reply_markup=inline_kb1)
+                card = CardDay(message.from_user.id, name, current_datetime.day)
+                card.recorde_in_date()
+        else:
+            current_datetime = datetime.now()
+            if current_datetime.day - int(time[0][0]) == 1:
+                current_datetime = datetime.now()
+                await bot.send_message(message.from_user.id, '🔮')
+                await asyncio.sleep(3)
+                await bot.send_photo(message.from_user.id, photo=open(f'parser/static/img/{name}.jpg', 'rb'))
+                with open(f'parser/static/txt/{name}.txt', 'r', encoding='utf8') as read:
+                    info = read.read()
+                    await bot.send_message(message.from_user.id, info[:200], reply_markup=inline_kb1)
+                    card = CardDay(message.from_user.id, name, current_datetime.day)
+                    card.recorde_in_date()
+            else:
+                await bot.send_message(message.from_user.id, '🔮')
+                await asyncio.sleep(3)
+                await bot.send_photo(message.from_user.id, photo=open(f'parser/static/img/{name_card[0][0]}.jpg', 'rb'))
+                with open(f'parser/static/txt/{name_card[0][0]}.txt', 'r', encoding='utf8') as read:
+                    info = read.read()
+                    await bot.send_message(message.from_user.id, info[:200], reply_markup=inline_kb10)
+    elif message.text == 'Вытянуть карту 🀄️':
         await bot.send_message(message.from_user.id, '🔮')
         await asyncio.sleep(3)
         await bot.send_photo(message.from_user.id, photo=open(f'parser/static/img/{name}.jpg', 'rb'))
@@ -128,6 +174,17 @@ async def main(message: types.Message):
         await bot.send_message(message.from_user.id, 'Начни вести диалог!\n(если хотите выйти нажмите на кнопку внизу!)', reply_markup=markup1)
     else:
         await bot.send_message(message.from_user.id, 'Главное меню', reply_markup=markup0)
+
+
+@dp.callback_query_handler(text='card_day')
+async def read_more(callback: types.CallbackQuery):
+    with open(f'parser/static/txt/{name_card[0][0]}.txt', 'r', encoding='utf8') as read:
+        info = read.read()
+        if len(info) > 4096:
+            await callback.message.edit_text(info[:4096])
+            await bot.send_message(callback.from_user.id, info[4096:8192])
+        else:
+            await callback.message.edit_text(info)
 
 
 @dp.message_handler(state=do.speaking)
