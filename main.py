@@ -9,7 +9,7 @@ from SQL.DataCardDay import CardDay
 from SQL.DataUsers import Users
 from SQL.HistoreCard import History, History_love
 from SQL.DataAnswer import Questions, add_wisdoms, card_love
-import os, random, asyncio, logging, openai, sqlite3, time
+import os, random, asyncio, logging, openai, sqlite3
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
@@ -90,6 +90,8 @@ async def main(message: types.Message):
         else:
             current_datetime = datetime.now()
             if current_datetime.day - int(time[0][0]) == 1:
+                cur.execute(f'DELETE FROM card_day WHERE name_card = "{name_card[0][0]}"')
+                con.commit()
                 current_datetime = datetime.now()
                 await bot.send_message(message.from_user.id, '🔮')
                 await asyncio.sleep(3)
