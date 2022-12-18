@@ -124,13 +124,13 @@ async def main(message: types.Message):
             await bot.send_message(message.from_user.id, 'Вы еще не гадали 👿')
         elif not his_love.isUserDatebase():
             for i in range(1, 5):
-                await bot.send_message(message.from_user.id, f'Категория: Карта дня 🀄️{his.read_card()[i-1][0][:200]}', reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton('Узнать больше', callback_data=f'history{i}')))
+                await bot.send_message(message.from_user.id, f'Категория: Вытянуть карту 🀄️{his.read_card()[i-1][0][:200]}', reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton('Узнать больше', callback_data=f'history{i}')))
         elif not his.isUserDatebase():
             for i in range(1, 5):
                 await bot.send_message(message.from_user.id, f'Категория: Расклад на отношения 🤍️{his_love.read_card_love()[i-1][0][:200]}', reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton('Узнать больше', callback_data=f'history_love{i}')))
         else:
             for i in range(1, 5):
-                await bot.send_message(message.from_user.id, f'Категория: Карта дня 🀄️{his.read_card()[i - 1][0][:200]}', reply_markup=InlineKeyboardMarkup().add( InlineKeyboardButton('Узнать больше', callback_data=f'history{i}')))
+                await bot.send_message(message.from_user.id, f'Категория: Вытянуть карту 🀄️{his.read_card()[i - 1][0][:200]}', reply_markup=InlineKeyboardMarkup().add( InlineKeyboardButton('Узнать больше', callback_data=f'history{i}')))
                 await bot.send_message(message.from_user.id, f'Категория: Расклад на отношения 🤍️{his_love.read_card_love()[i - 1][0][:200]}', reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton('Узнать больше', callback_data=f'history_love{i}')))
     elif message.text == 'Добавить мудрости 🤓':
         await do.add_wisdom.set()
